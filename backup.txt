@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PeaksAI - AI App Builder</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'inter': ['Inter', 'sans-serif']
+                    },
+                    colors: {
+                        'primary': '#1a1a1a',
+                        'secondary': '#2d2d2d',
+                        'accent': '#6366f1',
+                        'success': '#10b981',
+                        'warning': '#f59e0b',
+                        'error': '#ef4444',
+                        'text-primary': '#ffffff',
+                        'text-secondary': '#a1a1aa',
+                        'border': '#404040'
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .scrollbar-thin::-webkit-scrollbar { width: 4px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #2d2d2d; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #404040; border-radius: 2px; }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #525252; }
+        .file-hover:hover { background-color: rgba(99, 102, 241, 0.1); }
+        @keyframes pulse-soft { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-pulse-soft { animation: pulse-soft 2s infinite; }
+        .animate-slide-in { animation: slideIn 0.3s ease-out; }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Mock Claude API service
+        const claudeAPI = {
+            async chat(message, projectType = null) {
+                // Simulate API delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                const projectTypes = ['React App', 'Python Tool', 'Website', 'Node.js API', 'JavaScript Game'];
+                const detectedType = projectType || projectTypes.find(type => 
+                    message.toLowerCase().includes(type.toLowerCase().split(' ')[0])
+                ) || 'Website';
+                
+                return {
+                    type: detectedType,
+                    files: this.generateFiles(detectedType, message),
+                    response: `I've created a ${detectedType} for you! The project structure has been set up with all necessary files.`
+                };
+            },
+            
+            generateFiles(type, message) {
+                const templates = {
+                    'React App': [
+                        {
+                            name: 'package.json',
+                            type: 'file',
+                            content: JSON.stringify({
+                                name: 'react-app',
+                                version: '1.0.0',
+                                dependencies: {
+                                    'react': '^18.2.0',
+                                    'react-dom': '^18.2.0'
+                                },
+                                scripts: {
+                                    'dev': 'vite',
+                                    'build': 'vite build'
+                                }
+                            }, null, 2)
+                        },
+                        {
+                            name: 'src',
+                            type: 'folder',
+                            children: [
+                                {
+                                    name: 'App.jsx',
+                                    type: 'file',
+                                    content: `function App() {
+  return (
+    <div className="app">
+      <h1>Welcome to Your React App</h1>
+      <p>Built with PEAKS AI</p>
+    </div>
+  );
+}
+
+export default App;`
+                                },
+                                {
+                                    name: 'main.jsx',
+                                    type: 'file',
+                                    content: `import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);`
+                                },
+                                {
+                                    name: 'index.css',
+                                    type: 'file',
+                                    content: `body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f5f5f5;
+}
+
+.app {
+  text-align: center;
+  padding: 2rem;
+}
+
+h1 {
+  color: #333;
+  margin-bottom: 1rem;
+}`
+                                }
+                            ]
+                        },
+                        {
+                            name: 'index.html',
+                            type: 'file',
+                            content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React App</title>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+</html>`
+                        }
+                    ],
+                    'Website': [
+                        {
+                            name: 'index.html',
+                            type: 'file',
+                            content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Website</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Welcome to My Website</h1>
+  </header>
+  <main>
+    <p>Built with PEAKS AI</p>
+  </main>
+  <script src="script.js"></script>
+</body>
+</html>`
+                        },
+                        {
+                            name: 'style.css',
+                            type: 'file',
+                            content: `* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+header {
+  background: #6366f1;
+  color: white;
+  text-align: center;
+  padding: 2rem;
+}
+
+main {
+  padding: 2rem;
+  text-align: center;
+}`
+                        },
+                        {
+                            name: 'script.js',
+                            type: 'file',
+                            content: `document.addEventListener('DOMContentLoaded', function() {
+  console.log('Website loaded successfully!');
+});`
+                        }
+                    ],
+                    'Python Tool': [
+                        {
+                            name: 'main.py',
+                            type: 'file',
+                            content: `#!/usr/bin/env python3
+"""
+Python Tool created with PEAKS AI
+"""
+
+def main():
+    print("Hello from PEAKS AI!")
+    print("Your Python tool is ready!")
+
+if __name__ == "__main__":
+    main()`
+                        },
+                        {
+                            name: 'requirements.txt',
+                            type: 'file',
+                            content: `# Add your dependencies here
+requests==2.31.0
+numpy==1.24.3`
+                        },
+                        {
+                            name: 'README.md',
+                            type: 'file',
+                            content: `# Python Tool
+
+Created with PEAKS AI
+
+## Usage
+
+\`\`\`bash
+python main.py
+\`\`\`
+
+## Installation
+
+\`\`\`bash
+pip install -r requirements.txt
+\`\`\``
+                        }
+                    ]
+                };
+                
+                return templates[type] || templates['Website'];
+            }
+        };
+
+        // Landing Page Component
+        function LandingPage({ onStartChat }) {
+            const [demoInput, setDemoInput] = useState("");
+
+            const handleStartChat = () => {
+                if (demoInput.trim()) {
+                    onStartChat(demoInput);
+                }
+            };
+
+            const handleLogin = () => {
+                alert("In a real app, this would redirect to authentication");
+                onStartChat();
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-primary via-secondary to-primary flex items-center justify-center relative overflow-hidden">
+                    {/* Background Pattern */}
+                    <div className="absolute inset-0 opacity-5">
+                        <div style={{
+                            backgroundImage: 'radial-gradient(circle at 25% 25%, #6366f1 0%, transparent 50%), radial-gradient(circle at 75% 75%, #8b5cf6 0%, transparent 50%)'
+                        }} className="absolute inset-0"></div>
+                    </div>
+                    
+                    {/* Top Navigation */}
+                    <nav className="absolute top-0 left-0 right-0 z-50 p-6">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-3">
+                                <div className="w-8 h-8 bg-gradient-to-r from-accent to-purple-500 rounded-lg flex items-center justify-center">
+                                    <i className="fas fa-mountain text-white text-sm"></i>
+                                </div>
+                                <span className="text-xl font-bold bg-gradient-to-r from-accent to-purple-500 bg-clip-text text-transparent">PeaksAI</span>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                                <button 
+                                    onClick={handleLogin}
+                                    className="px-4 py-2 text-text-secondary hover:text-text-primary transition-colors"
+                                >
+                                    Sign In
+                                </button>
+                                <button 
+                                    onClick={handleLogin}
+                                    className="px-6 py-2 bg-accent hover:bg-blue-600 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
+                                >
+                                    Get Started
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    {/* Main Content */}
+                    <div className="text-center z-10 max-w-4xl mx-auto px-6">
+                        <div className="animate-fade-in">
+                            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-blue-100 to-purple-200 bg-clip-text text-transparent leading-tight">
+                                Build Anything with AI
+                            </h1>
+                            <p className="text-xl md:text-2xl text-text-secondary mb-8 max-w-2xl mx-auto leading-relaxed">
+                                Create full-stack applications, websites, and tools using natural language. No coding experience required.
+                            </p>
+                            
+                            {/* Demo Input */}
+                            <div className="bg-secondary/80 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-border/50">
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-10 h-10 bg-gradient-to-r from-accent to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i className="fas fa-robot text-white"></i>
+                                    </div>
+                                    <div className="flex-1">
+                                        <input 
+                                            type="text" 
+                                            placeholder="Hi PEAKS, what do you want to make?" 
+                                            value={demoInput}
+                                            onChange={(e) => setDemoInput(e.target.value)}
+                                            onKeyPress={(e) => e.key === 'Enter' && handleStartChat()}
+                                            className="w-full bg-transparent text-lg text-text-primary placeholder-text-secondary border-none outline-none"
+                                        />
+                                    </div>
+                                    <button 
+                                        onClick={handleStartChat}
+                                        className="px-6 py-3 bg-accent hover:bg-blue-600 rounded-lg font-medium transition-all duration-200 transform hover:scale-105"
+                                    >
+                                        Start Chat
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Feature Grid */}
+                            <div className="grid md:grid-cols-3 gap-6 mt-12">
+                                <div className="bg-secondary/50 backdrop-blur-sm rounded-xl p-6 border border-border/30">
+                                    <i className="fas fa-code text-accent text-2xl mb-4"></i>
+                                    <h3 className="text-lg font-semibold mb-2">Multi-Language Support</h3>
+                                    <p className="text-text-secondary">Python, JavaScript, React, Node.js, and more</p>
+                                </div>
+                                <div className="bg-secondary/50 backdrop-blur-sm rounded-xl p-6 border border-border/30">
+                                    <i className="fas fa-eye text-accent text-2xl mb-4"></i>
+                                    <h3 className="text-lg font-semibold mb-2">Live Preview</h3>
+                                    <p className="text-text-secondary">See your app come to life in real-time</p>
+                                </div>
+                                <div className="bg-secondary/50 backdrop-blur-sm rounded-xl p-6 border border-border/30">
+                                    <i className="fas fa-download text-accent text-2xl mb-4"></i>
+                                    <h3 className="text-lg font-semibold mb-2">Export & Deploy</h3>
+                                    <p className="text-text-secondary">Download your project or deploy instantly</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // File Explorer Component
+        function FileExplorer({ isOpen, files, onToggle, onDownload }) {
+            const [expandedFolders, setExpandedFolders] = useState(new Set());
+
+            const getFileIcon = (filename) => {
+                const ext = filename.split('.').pop()?.toLowerCase();
+                const iconMap = {
+                    'js': 'fab fa-js-square text-yellow-400',
+                    'jsx': 'fab fa-react text-blue-400',
+                    'ts': 'fab fa-js-square text-blue-500',
+                    'tsx': 'fab fa-react text-blue-400',
+                    'html': 'fab fa-html5 text-orange-500',
+                    'css': 'fab fa-css3-alt text-blue-400',
+                    'py': 'fab fa-python text-yellow-400',
+                    'json': 'fas fa-code text-gray-400',
+                    'md': 'fab fa-markdown text-gray-400',
+                    'txt': 'fas fa-file-alt text-gray-400'
+                };
+                return iconMap[ext] || 'fas fa-file text-gray-400';
+            };
+
+            const toggleFolder = (folderPath) => {
+                const newExpanded = new Set(expandedFolders);
+                if (newExpanded.has(folderPath)) {
+                    newExpanded.delete(folderPath);
+                } else {
+                    newExpanded.add(folderPath);
+                }
+                setExpandedFolders(newExpanded);
+            };
+
+            const renderFileTree = (files, level = 0, parentPath = '') => {
+                return files.map((file, index) => {
+                    const filePath = parentPath ? `${parentPath}/${file.name}` : file.name;
+                    
+                    if (file.type === 'folder') {
+                        const isExpanded = expandedFolders.has(filePath);
+                        
+                        return (
+                            <div key={`${filePath}-${index}`}>
+                                <div
+                                    className="flex items-center space-x-2 p-2 hover:bg-primary rounded cursor-pointer file-hover"
+                                    style={{ paddingLeft: `${level * 16 + 8}px` }}
+                                    onClick={() => toggleFolder(filePath)}
+                                >
+                                    <i className={`fas fa-chevron-right text-xs text-text-secondary transition-transform ${isExpanded ? 'rotate-90' : ''}`}></i>
+                                    <i className="fas fa-folder text-yellow-500 text-sm"></i>
+                                    <span className="text-sm">{file.name}</span>
+                                </div>
+                                {isExpanded && file.children && (
+                                    <div>
+                                        {renderFileTree(file.children, level + 1, filePath)}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    } else {
+                        return (
+                            <div
+                                key={`${filePath}-${index}`}
+                                className="flex items-center space-x-2 p-2 hover:bg-primary rounded cursor-pointer file-hover"
+                                style={{ paddingLeft: `${level * 16 + 24}px` }}
+                            >
+                                <i className={getFileIcon(file.name)}></i>
+                                <span className="text-sm">{file.name}</span>
+                            </div>
+                        );
+                    }
+                });
+            };
+
+            if (!isOpen) return null;
+
+            return (
+                <div className="w-64 bg-secondary border-r border-border flex flex-col transition-all duration-300">
+                    {/* File Explorer Header */}
+                    <div className="p-4 border-b border-border">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-semibold text-sm">Files</h3>
+                            <div className="flex items-center space-x-2">
+                                <button className="p-1 hover:bg-primary rounded text-text-secondary hover:text-text-primary transition-colors">
+                                    <i className="fas fa-plus text-xs"></i>
+                                </button>
+                                <button className="p-1 hover:bg-primary rounded text-text-secondary hover:text-text-primary transition-colors">
+                                    <i className="fas fa-folder-plus text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* File Tree */}
+                    <div className="flex-1 overflow-y-auto scrollbar-thin">
+                        <div className="p-2">
+                            {files && files.length > 0 ? (
+                                renderFileTree(files)
+                            ) : (
+                                <div className="text-center text-text-secondary py-8">
+                                    <i className="fas fa-folder-open text-2xl mb-2"></i>
+                                    <p className="text-sm">No files yet</p>
+                                    <p className="text-xs mt-1">Start chatting to create your first project</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Project Actions */}
+                    <div className="p-4 border-t border-border space-y-2">
+                        <button 
+                            onClick={onDownload}
+                            className="w-full px-3 py-2 bg-accent hover:bg-blue-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2"
+                        >
+                            <i className="fas fa-download"></i>
+                            <span>Download</span>
+                        </button>
+                        <button className="w-full px-3 py-2 bg-success hover:bg-green-600 rounded-lg text-sm font-medium transition-colors flex items-center justify-center space-x-2">
+                            <i className="fas fa-rocket"></i>
+                            <span>Deploy</span>
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        // Chat Panel Component
+        function ChatPanel({ project, onProjectUpdate, onGenerating }) {
+            const [message, setMessage] = useState("");
+            const [messages, setMessages] = useState([]);
+            const [isGenerating, setIsGenerating] = useState(false);
+            const messagesEndRef = useRef(null);
+
+            useEffect(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages]);
+
+            const sendMessage = async () => {
+                if (!message.trim() || isGenerating) return;
+
+                const userMessage = message.trim();
+                setMessage("");
+
+                // Add user message
+                const newUserMessage = {
+                    id: Date.now(),
+                    sender: 'user',
+                    content: userMessage,
+                    timestamp: new Date()
+                };
+                setMessages(prev => [...prev, newUserMessage]);
+
+                // Start AI generation
+                setIsGenerating(true);
+                onGenerating(true, "PEAKS is analyzing your request...");
+
+                try {
+                    const response = await claudeAPI.chat(userMessage, project?.type);
+                    
+                    onGenerating(true, `PEAKS is making the ${response.type}...`);
+                    
+                    // Simulate additional processing time
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // Add AI response
+                    const aiMessage = {
+                        id: Date.now() + 1,
+                        sender: 'ai',
+                        content: response.response,
+                        timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, aiMessage]);
+
+                    // Update project
+                    onProjectUpdate({
+                        ...project,
+                        type: response.type,
+                        files: response.files
+                    });
+
+                } catch (error) {
+                    const errorMessage = {
+                        id: Date.now() + 1,
+                        sender: 'ai',
+                        content: "I'm sorry, I encountered an error. Please try again.",
+                        timestamp: new Date()
+                    };
+                    setMessages(prev => [...prev, errorMessage]);
+                } finally {
+                    setIsGenerating(false);
+                    onGenerating(false);
+                }
+            };
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            };
+
+            const suggestProject = (type) => {
+                setMessage(`Create a ${type}`);
+            };
+
+            return (
+                <div className="w-1/2 flex flex-col border-r border-border">
+                    {/* Chat Header */}
+                    <div className="p-4 border-b border-border">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-gradient-to-r from-accent to-purple-500 rounded-full flex items-center justify-center">
+                                <i className="fas fa-robot text-white text-sm"></i>
+                            </div>
+                            <div>
+                                <h3 className="font-semibold">PEAKS AI</h3>
+                                <p className="text-xs text-text-secondary">Ready to build anything</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Chat Messages */}
+                    <div className="flex-1 overflow-y-auto scrollbar-thin p-4">
+                        <div className="space-y-4">
+                            {/* Welcome Message */}
+                            {messages.length === 0 && (
+                                <div className="flex items-start space-x-3 animate-fade-in">
+                                    <div className="w-8 h-8 bg-gradient-to-r from-accent to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i className="fas fa-robot text-white text-xs"></i>
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="bg-primary rounded-2xl rounded-tl-md p-4">
+                                            <p className="text-sm">Hi! I'm PEAKS, your AI app builder. What would you like to create today? I can help you build:</p>
+                                            <div className="grid grid-cols-2 gap-2 mt-3">
+                                                {[
+                                                    { name: 'React App', icon: '⚛️' },
+                                                    { name: 'Python Tool', icon: '🐍' },
+                                                    { name: 'Website', icon: '🌐' },
+                                                    { name: 'Node.js API', icon: '📡' }
+                                                ].map((type) => (
+                                                    <button 
+                                                        key={type.name}
+                                                        onClick={() => suggestProject(type.name)}
+                                                        className="text-left p-2 bg-secondary rounded-lg hover:bg-border transition-colors"
+                                                    >
+                                                        <span className="mr-2">{type.icon}</span>
+                                                        <span className="text-xs">{type.name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Chat Messages */}
+                            {messages.map((msg) => (
+                                <div
+                                    key={msg.id}
+                                    className={`flex items-start space-x-3 animate-fade-in ${
+                                        msg.sender === 'user' ? 'justify-end' : ''
+                                    }`}
+                                >
+                                    {msg.sender === 'ai' && (
+                                        <div className="w-8 h-8 bg-gradient-to-r from-accent to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <i className="fas fa-robot text-white text-xs"></i>
+                                        </div>
+                                    )}
+                                    
+                                    <div className={`flex-1 ${msg.sender === 'user' ? 'text-right' : ''}`}>
+                                        <div
+                                            className={`rounded-2xl p-4 inline-block max-w-md ${
+                                                msg.sender === 'user'
+                                                    ? 'bg-accent text-white rounded-tr-md'
+                                                    : 'bg-primary rounded-tl-md'
+                                            }`}
+                                        >
+                                            <p className="text-sm">{msg.content}</p>
+                                        </div>
+                                    </div>
+
+                                    {msg.sender === 'user' && (
+                                        <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span className="text-xs font-medium text-white">U</span>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+
+                            {/* Typing Indicator */}
+                            {isGenerating && (
+                                <div className="flex items-start space-x-3">
+                                    <div className="w-8 h-8 bg-gradient-to-r from-accent to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i className="fas fa-robot text-white text-xs"></i>
+                                    </div>
+                                    <div className="flex-1">
+                                        <div className="bg-primary rounded-2xl rounded-tl-md p-4">
+                                            <div className="flex space-x-1">
+                                                <div className="w-2 h-2 bg-text-secondary rounded-full animate-pulse"></div>
+                                                <div className="w-2 h-2 bg-text-secondary rounded-full animate-pulse" style={{ animationDelay: '0.1s' }}></div>
+                                                <div className="w-2 h-2 bg-text-secondary rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            <div ref={messagesEndRef} />
+                        </div>
+                    </div>
+
+                    {/* Chat Input */}
+                    <div className="p-4 border-t border-border">
+                        <div className="flex items-end space-x-3">
+                            <div className="flex-1">
+                                <textarea 
+                                    placeholder="Describe what you want to build..."
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    onKeyDown={handleKeyDown}
+                                    className="w-full bg-primary border border-border rounded-lg px-4 py-3 text-sm resize-none focus:border-accent focus:outline-none transition-colors"
+                                    rows="1"
+                                    disabled={isGenerating}
+                                />
+                            </div>
+                            <button 
+                                onClick={sendMessage}
+                                disabled={!message.trim() || isGenerating}
+                                className="px-4 py-3 bg-accent hover:bg-blue-600 rounded-lg transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <i className="fas fa-paper-plane text-sm"></i>
+                            </button>
+                        </div>
+                        <div className="flex items-center justify-between mt-2 text-xs text-text-secondary">
+                            <span>Press Enter to send</span>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-2 h-2 bg-success rounded-full"></div>
+                                <span>Claude AI Ready</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // Preview Panel Component
+        function PreviewPanel({ project, activeTab, onTabChange }) {
+            const [consoleOutput] = useState([
+                '$ Ready for commands...',
+                '$ Installing dependencies...',
+                '✓ Dependencies installed',
+                '$ Starting development server...',
+                '✓ Server ready on port 3000'
+            ]);
+
+            const generatePreviewContent = () => {
+                if (!project?.files || project.files.length === 0) {
+                    return (
+                        <div className="h-full flex items-center justify-center bg-white text-gray-500">
+                            <div className="text-center">
+                                <i className="fas fa-eye text-4xl mb-4"></i>
+                                <p className="text-lg font-medium">No Preview Available</p>
+                                <p className="text-sm mt-2">Start building your app to see it here</p>
+                            </div>
+                        </div>
+                    );
+                }
+
+                if (project.type === 'React App') {
+                    return (
+                        <div className="h-full bg-white p-8">
+                            <div className="text-center">
+                                <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i className="fab fa-react text-white text-2xl"></i>
+                                </div>
+                                <h1 className="text-2xl font-bold text-gray-800 mb-2">Welcome to React</h1>
+                                <p className="text-gray-600">Your React application is ready!</p>
+                            </div>
+                        </div>
+                    );
+                } else if (project.type === 'Website') {
+                    return (
+                        <div className="h-full bg-gradient-to-br from-blue-500 to-purple-600 p-8 text-white">
+                            <div className="text-center">
+                                <h1 className="text-4xl font-bold mb-4">Your Website</h1>
+                                <p className="text-xl opacity-90">Built with HTML, CSS, and JavaScript</p>
+                            </div>
+                        </div>
+                    );
+                } else {
+                    return (
+                        <div className="h-full bg-gray-100 p-8">
+                            <div className="text-center">
+                                <h1 className="text-3xl font-bold text-gray-800 mb-4">{project.type}</h1>
+                                <p className="text-gray-600">Your application is running successfully!</p>
+                            </div>
+                        </div>
+                    );
+                }
+            };
+
+            return (
+                <div className="w-1/2 flex flex-col">
+                    {/* Preview Header */}
+                    <div className="p-4 border-b border-border">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                                <h3 className="font-semibold">Preview</h3>
+                                <div className="flex items-center space-x-1">
+                                    {['preview', 'console', 'browser'].map((tab) => (
+                                        <button 
+                                            key={tab}
+                                            onClick={() => onTabChange(tab)}
+                                            className={`px-3 py-1 text-xs rounded-md transition-colors ${
+                                                activeTab === tab 
+                                                    ? 'bg-accent text-white' 
+                                                    : 'bg-primary text-text-secondary hover:bg-border'
+                                            }`}
+                                        >
+                                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <button className="p-2 hover:bg-primary rounded transition-colors">
+                                    <i className="fas fa-refresh text-text-secondary text-sm"></i>
+                                </button>
+                                <button className="p-2 hover:bg-primary rounded transition-colors">
+                                    <i className="fas fa-external-link-alt text-text-secondary text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Preview Content */}
+                    <div className="flex-1 relative">
+                        {activeTab === 'preview' && (
+                            <div className="absolute inset-0">
+                                {generatePreviewContent()}
+                            </div>
+                        )}
+                        
+                        {activeTab === 'console' && (
+                            <div className="absolute inset-0 bg-primary p-4 font-mono text-sm">
+                                <div className="h-full overflow-y-auto scrollbar-thin">
+                                    <div className="space-y-1">
+                                        {consoleOutput.map((line, index) => (
+                                            <div key={index} className="text-text-secondary">
+                                                {line.startsWith('$') ? (
+                                                    <>
+                                                        <span className="text-success">$</span>
+                                                        <span className="ml-1">{line.substring(1)}</span>
+                                                    </>
+                                                ) : (
+                                                    <span>{line}</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        {activeTab === 'browser' && (
+                            <div className="absolute inset-0 bg-primary">
+                                <div className="h-full flex items-center justify-center text-text-secondary">
+                                    <div className="text-center">
+                                        <i className="fas fa-globe text-4xl mb-4"></i>
+                                        <p className="text-lg font-medium">Browser View</p>
+                                        <p className="text-sm mt-2">
+                                            {project?.files?.length > 0 
+                                                ? "Your project is ready to view in browser"
+                                                : "Create your app to see it in the browser"
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        // Loading Overlay Component
+        function LoadingOverlay({ isVisible, title, message }) {
+            if (!isVisible) return null;
+
+            return (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                    <div className="bg-secondary rounded-2xl p-8 text-center border border-border/50">
+                        <div className="animate-pulse-soft mb-4">
+                            <i className="fas fa-cog fa-spin text-accent text-3xl"></i>
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2">{title}</h3>
+                        <p className="text-text-secondary text-sm">{message}</p>
+                    </div>
+                </div>
+            );
+        }
+
+        // Main App Component
+        function MainApp() {
+            const [user, setUser] = useState(null);
+            const [currentProject, setCurrentProject] = useState(null);
+            const [sidebarOpen, setSidebarOpen] = useState(true);
+            const [activeTab, setActiveTab] = useState('preview');
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [loadingMessage, setLoadingMessage] = useState("");
+
+            const handleLogin = (initialMessage = "") => {
+                setUser({ name: 'Demo User', email: 'demo@peaksai.com' });
+                if (initialMessage) {
+                    // Auto-create project with initial message
+                    setCurrentProject({
+                        id: 1,
+                        name: 'New Project',
+                        type: 'website',
+                        files: []
+                    });
+                }
+            };
+
+            const handleLogout = () => {
+                setUser(null);
+                setCurrentProject(null);
+            };
+
+            const handleProjectUpdate = (project) => {
+                setCurrentProject(project);
+            };
+
+            const handleGenerating = (generating, message = "") => {
+                setIsGenerating(generating);
+                setLoadingMessage(message);
+            };
+
+            const handleDownload = () => {
+                if (!currentProject?.files) return;
+                
+                // Simple download simulation
+                const projectData = {
+                    name: currentProject.name,
+                    type: currentProject.type,
+                    files: currentProject.files
+                };
+                
+                const dataStr = JSON.stringify(projectData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${currentProject.name}.json`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            };
+
+            if (!user) {
+                return <LandingPage onStartChat={handleLogin} />;
+            }
+
+            return (
+                <div className="h-screen flex flex-col">
+                    {/* Header */}
+                    <header className="bg-secondary border-b border-border px-4 py-3 flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                            <button
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className="p-2 hover:bg-primary rounded-lg transition-colors"
+                            >
+                                <i className="fas fa-bars text-text-secondary"></i>
+                            </button>
+                            <div className="flex items-center space-x-3">
+                                <div className="w-6 h-6 bg-gradient-to-r from-accent to-purple-500 rounded flex items-center justify-center">
+                                    <i className="fas fa-mountain text-white text-xs"></i>
+                                </div>
+                                <span className="font-bold">PeaksAI</span>
+                            </div>
+                            <div className="hidden md:flex items-center space-x-2 bg-primary rounded-lg px-3 py-1">
+                                <i className="fas fa-project-diagram text-accent text-sm"></i>
+                                <span className="text-sm">{currentProject?.name || "Untitled Project"}</span>
+                            </div>
+                        </div>
+                        
+                        <div className="flex items-center space-x-4">
+                            <div className="hidden md:flex items-center space-x-2 bg-primary rounded-lg px-3 py-2">
+                                <div className="w-2 h-2 bg-success rounded-full"></div>
+                                <span className="text-sm text-text-secondary">AI Ready</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                                    <span className="text-xs font-medium text-white">U</span>
+                                </div>
+                                <button 
+                                    onClick={handleLogout}
+                                    className="text-text-secondary hover:text-text-primary p-2"
+                                >
+                                    <i className="fas fa-sign-out-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content Area */}
+                    <div className="flex-1 flex overflow-hidden">
+                        {/* Sidebar */}
+                        <FileExplorer 
+                            isOpen={sidebarOpen}
+                            files={currentProject?.files || []}
+                            onToggle={() => setSidebarOpen(!sidebarOpen)}
+                            onDownload={handleDownload}
+                        />
+
+                        {/* Main Content */}
+                        <div className="flex-1 flex">
+                            {/* Chat Panel */}
+                            <ChatPanel
+                                project={currentProject}
+                                onProjectUpdate={handleProjectUpdate}
+                                onGenerating={handleGenerating}
+                            />
+
+                            {/* Preview Panel */}
+                            <PreviewPanel
+                                project={currentProject}
+                                activeTab={activeTab}
+                                onTabChange={setActiveTab}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Loading Overlay */}
+                    <LoadingOverlay
+                        isVisible={isGenerating}
+                        title={loadingMessage}
+                        message="Please wait while PEAKS creates your project"
+                    />
+                </div>
+            );
+        }
+
+        // Render the app
+        ReactDOM.render(<MainApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
